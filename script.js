@@ -1,11 +1,11 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUYYXBwG6BjBnKqsI2ZAGahR7ifdedo-ZXCQ95xxjIv8bk-fVEqEGjfhY_dx3QZ3-cJw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmjog4HdU7iX9FpwoaUOr-3f_qmHtEywg218P0zJ_zbI6uyDIALZkH80nRf9tN3jnjSA/exec";
 
 let members = [];
-let adminPin = "";
+let adminPassword = "";
 let currentFilter = 'all';
 let toastTimeout = null;
 
-// Ambil data dari Google Sheets saat halaman dibuka
+// Ambil data dari Google Sheets
 async function loadMembers() {
   const loadingEl = document.getElementById('loadingState');
   if (loadingEl) loadingEl.classList.remove('hidden');
@@ -16,7 +16,7 @@ async function loadMembers() {
     members = Array.isArray(data) ? data.reverse() : [];
   } catch (err) {
     console.error(err);
-    showToast('Gagal memuat data. Cek izin akses Apps Script.');
+    showToast('Gagal memuat data dari Google Sheets');
   }
 
   if (loadingEl) loadingEl.classList.add('hidden');
@@ -24,36 +24,102 @@ async function loadMembers() {
   renderMembers();
 }
 
-// Kirim perintah perubahan ke Google Sheets (Anti-blokir CORS)
-async function sendToSheet(payload) {
-  if (!adminPin) {
-    const inputPin = prompt("Masukkan PIN Admin:");
-    if (!inputPin) return false;
-    adminPin = inputPin.trim();
+// Modal Login & Verifikasi Password
+function openLoginModal() {
+  document.getElementById('loginModal').classList.remove('hidden');
+  document.getElementById('loginModal').classList.add('flex');
+  document.getElementById('adminPasswordInput').focus();
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.add('hidden');
+  document.getElementById('loginModal').classList.remove('flex');
+  document.getElementById('adminPasswordInput').value = '';
+}
+
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const inputPass = document.getElementById('adminPasswordInput').value.trim();
+  const btn = document.getElementById('btnSubmitLogin');
+  if (!inputPass) return;
+
+  btn.textContent = 'Memeriksa...';
+  btn.disabled = true;
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append('payload', JSON.stringify({ action: 'login', password: inputPass }));
+
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: formData
+    });
+    const result = await res.json();
+
+    if (result.status === 'ok') {
+      adminPassword = inputPass;
+      closeLoginModal();
+      updateAdminUI();
+      renderMembers();
+      showToast('Login Admin berhasil!');
+    } else {
+      alert(result.message || 'Password Salah!');
+    }
+  } catch (err) {
+    // Fallback jika redirect Google memblokir pembacaan JSON
+    adminPassword = inputPass;
+    closeLoginModal();
+    updateAdminUI();
+    renderMembers();
+    showToast('Mode Admin diaktifkan');
   }
+
+  btn.textContent = 'Masuk';
+  btn.disabled = false;
+});
+
+function logoutAdmin() {
+  adminPassword = "";
+  updateAdminUI();
+  renderMembers();
+  showToast('Anda keluar dari Mode Admin');
+}
+
+function updateAdminUI() {
+  const isAdmin = adminPassword !== "";
+  document.getElementById('adminFormSection').classList.toggle('hidden', !isAdmin);
+  document.getElementById('visitorBanner').classList.toggle('hidden', isAdmin);
+  document.getElementById('btnOpenLogin').classList.toggle('hidden', isAdmin);
+  document.getElementById('btnLogout').classList.toggle('hidden', !isAdmin);
+  document.getElementById('btnResetMonth').classList.toggle('hidden', !isAdmin);
+
+  const listSection = document.getElementById('listSection');
+  if (isAdmin) {
+    listSection.classList.remove('lg:col-span-12');
+    listSection.classList.add('lg:col-span-8');
+  } else {
+    listSection.classList.remove('lg:col-span-8');
+    listSection.classList.add('lg:col-span-12');
+  }
+}
+
+// Kirim perintah perubahan ke Google Sheets
+async function sendToSheet(payload) {
+  if (!adminPassword) return false;
 
   showToast('Menyimpan ke Google Sheets...');
   try {
-    const bodyData = JSON.stringify({ ...payload, pin: adminPin });
-
     await fetch(SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8'
       },
-      body: bodyData
+      body: JSON.stringify({ ...payload, password: adminPassword })
     });
 
     await new Promise(resolve => setTimeout(resolve, 1500));
-    const prevCount = members.length;
     await loadMembers();
-
-    if (payload.action === 'add' && members.length === prevCount) {
-      alert('Data tidak bertambah. Pastikan PIN Admin benar!');
-      adminPin = "";
-      return false;
-    }
 
     showToast('Berhasil tersimpan!');
     return true;
@@ -177,6 +243,7 @@ function renderMembers() {
   const container = document.getElementById('memberList');
   const emptyState = document.getElementById('emptyState');
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const isAdmin = adminPassword !== "";
 
   const filtered = members.filter(m => {
     const okFilter =
@@ -198,7 +265,7 @@ function renderMembers() {
       document.getElementById('emptyDesc').textContent = 'Tidak ada anggota yang cocok dengan pencarian atau filter.';
     } else {
       document.getElementById('emptyTitle').textContent = 'Belum ada anggota WiFi';
-      document.getElementById('emptyDesc').textContent = 'Silakan tambahkan nama anggota dan nominal tagihan melalui formulir di samping.';
+      document.getElementById('emptyDesc').textContent = 'Data akan muncul di sini setelah Admin menambahkannya.';
     }
     return;
   }
@@ -219,6 +286,29 @@ function renderMembers() {
         ? 'border-emerald-200/90 bg-emerald-50/15'
         : 'border-slate-200/90 hover:border-blue-300'
     }`;
+
+    const adminControls = isAdmin ? `
+      <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+        <div class="inline-flex rounded-xl bg-slate-100 p-1 gap-1">
+          <button type="button" onclick="setPaymentStatus('${m.id}', true)"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              m.paid ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+            }">
+            Sudah Bayar
+          </button>
+          <button type="button" onclick="setPaymentStatus('${m.id}', false)"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              !m.paid ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-rose-50 hover:text-rose-700'
+            }">
+            Belum Bayar
+          </button>
+        </div>
+        <button type="button" onclick="deleteMember('${m.id}', '${escapeHTML(m.name)}')"
+          class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Hapus Anggota">
+          🗑️
+        </button>
+      </div>
+    ` : '';
 
     card.innerHTML = `
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -244,27 +334,7 @@ function renderMembers() {
             ${m.paid && m.paidAt ? `<p class="text-[11px] text-emerald-600 mt-1">✓ Dibayar pada ${m.paidAt}</p>` : ''}
           </div>
         </div>
-
-        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-          <div class="inline-flex rounded-xl bg-slate-100 p-1 gap-1">
-            <button type="button" onclick="setPaymentStatus('${m.id}', true)"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                m.paid ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
-              }">
-              Sudah Bayar
-            </button>
-            <button type="button" onclick="setPaymentStatus('${m.id}', false)"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                !m.paid ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-rose-50 hover:text-rose-700'
-              }">
-              Belum Bayar
-            </button>
-          </div>
-          <button type="button" onclick="deleteMember('${m.id}', '${escapeHTML(m.name)}')"
-            class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Hapus Anggota">
-            🗑️
-          </button>
-        </div>
+        ${adminControls}
       </div>
     `;
     container.appendChild(card);
@@ -272,3 +342,4 @@ function renderMembers() {
 }
 
 loadMembers();
+    
