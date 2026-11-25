@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPi3Jcumu-YPC4q0NNz52BpZ48UD-G7VoF26ZChv5twAhBGBWsYAX9xCYb1oiCcY8E7g/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUYYXBwG6BjBnKqsI2ZAGahR7ifdedo-ZXCQ95xxjIv8bk-fVEqEGjfhY_dx3QZ3-cJw/exec";
 
 let members = [];
 let adminPin = "";
