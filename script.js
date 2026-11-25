@@ -1,4 +1,3 @@
-// TEMPEL URL GOOGLE APPS SCRIPT ANDA DI SINI (yang berakhiran /exec):
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPi3Jcumu-YPC4q0NNz52BpZ48UD-G7VoF26ZChv5twAhBGBWsYAX9xCYb1oiCcY8E7g/exec";
 
 let members = [];
@@ -12,11 +11,12 @@ async function loadMembers() {
   if (loadingEl) loadingEl.classList.remove('hidden');
 
   try {
-    const res = await fetch(SCRIPT_URL);
+    const res = await fetch(SCRIPT_URL + "?t=" + Date.now());
     const data = await res.json();
     members = Array.isArray(data) ? data.reverse() : [];
   } catch (err) {
-    showToast('Gagal memuat data dari Google Sheets');
+    console.error(err);
+    showToast('Gagal memuat data. Cek izin akses Apps Script.');
   }
 
   if (loadingEl) loadingEl.classList.add('hidden');
@@ -24,7 +24,7 @@ async function loadMembers() {
   renderMembers();
 }
 
-// Kirim perintah perubahan ke Google Sheets (otomatis minta PIN)
+// Kirim perintah perubahan ke Google Sheets (Anti-blokir CORS)
 async function sendToSheet(payload) {
   if (!adminPin) {
     const inputPin = prompt("Masukkan PIN Admin:");
@@ -34,21 +34,32 @@ async function sendToSheet(payload) {
 
   showToast('Menyimpan ke Google Sheets...');
   try {
-    const res = await fetch(SCRIPT_URL, {
+    const bodyData = JSON.stringify({ ...payload, pin: adminPin });
+
+    await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ ...payload, pin: adminPin })
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: bodyData
     });
-    const result = await res.json();
-    if (result.status === "error") {
-      alert(result.message || "PIN Salah!");
-      adminPin = ""; // Reset PIN jika salah agar bisa coba lagi
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const prevCount = members.length;
+    await loadMembers();
+
+    if (payload.action === 'add' && members.length === prevCount) {
+      alert('Data tidak bertambah. Pastikan PIN Admin benar!');
+      adminPin = "";
       return false;
     }
-    await loadMembers();
+
     showToast('Berhasil tersimpan!');
     return true;
   } catch (err) {
-    showToast('Terjadi kesalahan koneksi ke Google Sheets');
+    console.error(err);
+    showToast('Terjadi kesalahan koneksi internet');
     return false;
   }
 }
@@ -98,7 +109,6 @@ function openResetModal() {
   }
 }
 
-// Helper Format Rupiah
 function formatRupiah(num) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -119,7 +129,7 @@ function showToast(msg) {
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => {
     toast.classList.add('translate-y-20', 'opacity-0');
-  }, 2800);
+  }, 3000);
 }
 
 function setFilter(filter) {
@@ -261,5 +271,4 @@ function renderMembers() {
   });
 }
 
-// Jalankan pertama kali
 loadMembers();
