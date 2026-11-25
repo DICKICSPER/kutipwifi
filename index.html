@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kutip Duit WiFi — Manajemen Tagihan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Header / Navbar -->
+  <header class="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 backdrop-blur-sm p-2.5 rounded-xl border border-white/25 shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight leading-tight">Kutip Duit WiFi</h1>
+          <p class="text-xs text-blue-100 font-medium">Pencatatan Iuran & Status Pembayaran Anggota</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <button onclick="openResetModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/25 transition cursor-pointer" title="Reset semua status menjadi Belum Bayar untuk bulan baru">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Reset Bulan Baru
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Summary Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Total Anggota -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Anggota</p>
+          <p id="statTotalMembers" class="text-2xl font-extrabold text-slate-800 mt-0.5">0</p>
+          <p id="statPaidRatio" class="text-xs text-slate-500 mt-0.5">0 dari 0 lunas</p>
+        </div>
+      </div>
+
+      <!-- Sudah Terkumpul -->
+      <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Sudah Bayar</p>
+          <p id="statCollected" class="text-xl font-extrabold text-emerald-700 mt-0.5 truncate">Rp 0</p>
+          <p id="statPaidCount" class="text-xs text-slate-500 mt-0.5">0 orang lunas</p>
+        </div>
+      </div>
+
+      <!-- Belum Terkumpul -->
+      <div class="bg-white rounded-2xl p-4 border border-rose-200/80 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-rose-600 uppercase tracking-wider">Belum Bayar</p>
+          <p id="statUncollected" class="text-xl font-extrabold text-rose-700 mt-0.5 truncate">Rp 0</p>
+          <p id="statUnpaidCount" class="text-xs text-slate-500 mt-0.5">0 orang menunggak</p>
+        </div>
+      </div>
+
+      <!-- Total Target Tagihan -->
+      <div class="bg-white rounded-2xl p-4 border border-blue-200/80 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-blue-600 uppercase tracking-wider">Total Tagihan</p>
+          <p id="statTotalTarget" class="text-xl font-extrabold text-slate-800 mt-0.5 truncate">Rp 0</p>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+            <div id="progressBar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid Layout: Form Tambah Anggota + Daftar Anggota -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Form Tambah Anggota (Left Column on Desktop) -->
+      <section class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 sticky top-24">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+          </div>
+          <h2 class="text-base font-bold text-slate-800">Tambah Anggota WiFi</h2>
+        </div>
+
+        <form id="addMemberForm" class="space-y-4">
+          <div>
+            <label for="memberName" class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Anggota <span class="text-rose-500">*</span></label>
+            <input type="text" id="memberName" required placeholder="Contoh: Budi Santoso"
+              class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" />
+          </div>
+
+          <div>
+            <label for="memberAmount" class="block text-xs font-semibold text-slate-600 mb-1.5">Jumlah Tagihan (Rp) <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-sm font-semibold text-slate-400">Rp</span>
+              <input type="number" id="memberAmount" required min="1000" step="500" placeholder="150000"
+                class="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" />
+            </div>
+            <!-- Quick Preset Amounts -->
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <button type="button" onclick="setAmountPreset(100000)" class="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 transition cursor-pointer">100rb</button>
+              <button type="button" onclick="setAmountPreset(150000)" class="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 transition cursor-pointer">150rb</button>
+              <button type="button" onclick="setAmountPreset(200000)" class="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 transition cursor-pointer">200rb</button>
+              <button type="button" onclick="setAmountPreset(250000)" class="text-[11px] font-medium px-2 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 transition cursor-pointer">250rb</button>
+            </div>
+          </div>
+
+          <div>
+            <label for="memberNote" class="block text-xs font-semibold text-slate-600 mb-1.5">Catatan / Keterangan <span class="text-slate-400 font-normal">(Opsional)</span></label>
+            <input type="text" id="memberNote" placeholder="Contoh: Rumah blok B2 / Paket 20Mbps"
+              class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" />
+          </div>
+
+          <button type="submit"
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2 transition cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Tambah ke Daftar
+          </button>
+        </form>
+      </section>
+
+      <!-- Daftar Anggota WiFi (Right Column on Desktop) -->
+      <section class="lg:col-span-8 space-y-4">
+
+        <!-- Filter & Search Bar -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+          <!-- Filter Tabs -->
+          <div class="inline-flex bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+            <button type="button" onclick="setFilter('all')" id="filter-all"
+              class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-white text-slate-800 shadow-sm">
+              Semua (<span id="countAll">0</span>)
+            </button>
+            <button type="button" onclick="setFilter('unpaid')" id="filter-unpaid"
+              class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-slate-600 hover:text-slate-800">
+              Belum Bayar (<span id="countUnpaid">0</span>)
+            </button>
+            <button type="button" onclick="setFilter('paid')" id="filter-paid"
+              class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-slate-600 hover:text-slate-800">
+              Sudah Bayar (<span id="countPaid">0</span>)
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative flex-1 sm:max-w-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="searchInput" oninput="renderMembers()" placeholder="Cari nama anggota..."
+              class="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" />
+          </div>
+        </div>
+
+        <!-- Member List Container -->
+        <div id="memberList" class="space-y-3">
+          <!-- Cards rendered via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h3 id="emptyTitle" class="text-base font-bold text-slate-700">Belum ada anggota WiFi</h3>
+          <p id="emptyDesc" class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Silakan tambahkan nama anggota dan nominal tagihan melalui formulir di samping.</p>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-slate-800">Edit Data Anggota</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="editMemberForm" class="space-y-4">
+        <input type="hidden" id="editMemberId" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Anggota</label>
+          <input type="text" id="editMemberName" required
+            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Jumlah Tagihan (Rp)</label>
+          <input type="number" id="editMemberAmount" required min="1000" step="500"
+            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Catatan / Keterangan</label>
+          <input type="text" id="editMemberNote"
+            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">Batal</button>
+          <button type="submit" class="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition cursor-pointer">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm Delete / Reset Modal -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-fade-in text-center">
+      <div id="confirmIcon" class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <h3 id="confirmTitle" class="text-lg font-bold text-slate-800">Hapus Anggota?</h3>
+      <p id="confirmMessage" class="text-sm text-slate-500 mt-1.5">Data anggota ini akan dihapus permanen dari daftar.</p>
+      <div class="flex gap-2.5 mt-5">
+        <button type="button" onclick="closeConfirmModal()" class="flex-1 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer">Batal</button>
+        <button type="button" id="confirmActionBtn" class="flex-1 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5">
+      <span id="toastIcon" class="text-emerald-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+      </span>
+      <span id="toastText">Berhasil disimpan</span>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
