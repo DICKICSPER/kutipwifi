@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmjog4HdU7iX9FpwoaUOr-3f_qmHtEywg218P0zJ_zbI6uyDIALZkH80nRf9tN3jnjSA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUdQALE94VJSEBRS8_pXBT1_yRl6deZxAuO_BI9jc6W_9rwjLqkLiOZWuT7aYbz_V8hg/exec";
 
 let members = [];
 let adminPassword = "";
