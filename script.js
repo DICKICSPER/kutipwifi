@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfW17tVwY_gO5nITcQRVRnv1XQkp4bNSua2B3EIXaHl-nCSI4eEWclAyxBVFzT2cfK/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUdQALE94VJSEBRS8_pXBT1_yRl6deZxAuO_BI9jc6W_9rwjLqkLiOZWuT7aYbz_V8hg/exec";
 
 let members = [];
 let adminPassword = "";
@@ -22,6 +22,50 @@ async function loadMembers() {
   if (loadingEl) loadingEl.classList.add('hidden');
   updateStats();
   renderMembers();
+}
+
+// Fitur Ambil GPS Otomatis dari HP
+function captureCurrentGPS(inputId, btnId) {
+  if (!navigator.geolocation) {
+    alert('Browser HP Anda tidak mendukung fitur GPS.');
+    return;
+  }
+
+  const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Mencari titik...';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    function (pos) {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      document.getElementById(inputId).value = mapsUrl;
+      btn.textContent = '✅ GPS Didapat';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1500);
+      showToast('Titik koordinat GPS berhasil diambil!');
+    },
+    function (err) {
+      alert('Gagal mengambil GPS. Pastikan izin Lokasi (Location) di HP dan browser aktif.');
+      btn.textContent = originalText;
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// Ubah input lokasi (link atau koordinat teks) menjadi link Google Maps siap klik
+function formatMapsUrl(rawLoc) {
+  if (!rawLoc) return "";
+  const clean = rawLoc.trim();
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+  return `https://www.google.com/maps?q=${encodeURIComponent(clean)}`;
 }
 
 // Modal Login & Verifikasi Password
@@ -95,7 +139,31 @@ function updateAdminUI() {
   }
 }
 
-// Kirim perintah perubahan ke Google Sheets via GET parameter (Anti-blokir CORS)
+// Modal Edit Lokasi Anggota Lama
+function openLocationModal(id, name, currentLoc) {
+  document.getElementById('editLocMemberId').value = id;
+  document.getElementById('locModalMemberName').textContent = `Anggota: ${name}`;
+  document.getElementById('editLocInput').value = currentLoc || '';
+  const modal = document.getElementById('locationModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeLocationModal() {
+  const modal = document.getElementById('locationModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+document.getElementById('editLocationForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const id = document.getElementById('editLocMemberId').value;
+  const location = document.getElementById('editLocInput').value.trim();
+  closeLocationModal();
+  await sendToSheet({ action: 'update_location', id, location });
+});
+
+// Kirim perintah perubahan ke Google Sheets
 async function sendToSheet(payload) {
   if (!adminPassword) return false;
 
@@ -131,10 +199,11 @@ document.getElementById('addMemberForm').addEventListener('submit', async functi
   const name = document.getElementById('memberName').value.trim();
   const amount = parseInt(document.getElementById('memberAmount').value, 10);
   const note = document.getElementById('memberNote').value.trim();
+  const location = document.getElementById('memberLocation').value.trim();
 
   if (!name || isNaN(amount) || amount <= 0) return;
 
-  const ok = await sendToSheet({ action: 'add', name, amount, note });
+  const ok = await sendToSheet({ action: 'add', name, amount, note, location });
   if (ok) {
     document.getElementById('addMemberForm').reset();
   }
@@ -275,6 +344,14 @@ function renderMembers() {
       .join('')
       .toUpperCase();
 
+    const mapsHref = formatMapsUrl(m.location);
+    const locationBadge = mapsHref
+      ? `<a href="${escapeHTML(mapsHref)}" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition">
+           📍 Buka Maps
+         </a>`
+      : '';
+
     const card = document.createElement('div');
     card.className = `bg-white rounded-2xl p-4 sm:p-5 border transition-all shadow-xs animate-fade-in ${
       m.paid
@@ -298,6 +375,10 @@ function renderMembers() {
             Belum Bayar
           </button>
         </div>
+        <button type="button" onclick="openLocationModal('${m.id}', '${escapeHTML(m.name)}', '${escapeHTML(m.location || '')}')"
+          class="p-2 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition cursor-pointer" title="Atur / Edit Lokasi">
+          📍
+        </button>
         <button type="button" onclick="deleteMember('${m.id}', '${escapeHTML(m.name)}')"
           class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Hapus Anggota">
           🗑️
@@ -321,6 +402,7 @@ function renderMembers() {
               }">
                 ${m.paid ? 'Lunas' : 'Belum Bayar'}
               </span>
+              ${locationBadge}
             </div>
             <p class="text-sm font-extrabold mt-1 ${m.paid ? 'text-emerald-700' : 'text-slate-800'}">
               ${formatRupiah(m.amount)}
@@ -337,3 +419,4 @@ function renderMembers() {
 }
 
 loadMembers();
+  
